@@ -2,6 +2,7 @@
   "wish.command.thinking": "Thinking...",
   "wish.command.success": "Generation complete! Executing code...",
   "wish.command.error": "Error occurred while requesting LLM: %s",
+  "wish.command.forbidden": "The deity detected a dangerous operation '%s' in the wish and refused to execute it! You have been compensated with a diamond block.",
   "wish.compiler.compile_failed": "Compilation failed,Check out the log for more information",
   "wish.compiler.execute_success": "Code execution finished!",
   "wish.compiler.runtime_error": "Runtime error,Check out the log for more information",

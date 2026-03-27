@@ -86,6 +86,24 @@ public class WishCommand implements Command<CommandSourceStack> {
 
                 final String finalCode = generatedCode.trim();
 
+                String[] forbiddenPatterns = {
+                        "Runtime.getRuntime().exec",
+                        "ProcessBuilder",
+                        "System.exit",
+                        "java.io",
+                        "java.nio"
+                };
+
+                for (String pattern : forbiddenPatterns) {
+                    if (finalCode.contains(pattern)) {
+                        source.getServer().execute(() -> {
+                            source.getPlayer().addItem(net.minecraft.world.item.Items.DIAMOND_BLOCK.getDefaultInstance());
+                            source.sendFailure(Component.translatable("wish.command.forbidden", pattern));
+                        });
+                        return;
+                    }
+                }
+
                 source.getServer().execute(() -> {
                     source.sendSystemMessage(Component.translatable("wish.command.success"));
                     WishCompiler.eval(source, finalCode);

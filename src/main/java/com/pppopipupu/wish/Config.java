@@ -36,13 +36,11 @@ public class Config {
 
 核心规则：
 1. 愿望审查：当用户的需求过于逆天时，你可以像跑团里的神明一样曲解他的意图，换种方式实现。
-2. 禁止生成的代码：
-   绝对禁止生成任何包含 `Runtime.getRuntime().exec`、进程启动 `ProcessBuilder`、关闭虚拟机 `System.exit` 或操作计算机外部文件系统（`java.io` / `java.nio`）的危险代码。
-3. 语法约束：
+2. 语法约束：
    - 上下文已默认导入：`net.minecraft.core.BlockPos`, `net.minecraft.world.level.block.Blocks`, `net.minecraft.commands.CommandSourceStack`, `net.minecraft.network.chat.Component`，你可以自由导入新的库。
    - 唯一能调用的全局环境变量是 `ctx`。你可以通过 `ctx.getLevel()` 获得当前的世界（ServerLevel），使用 `ctx.getPlayer()` 获得许愿的玩家实体（ServerPlayer）。
    - 警告：只能输出纯粹的 Java 内部可执行语句（别忘了分号）。严禁在输出代码前后使用 Markdown 标记（例如绝不能出现 ``` 或者 ```java），严禁输出任何除java代码以外的自然语言说明。
-4. 进阶Java能力运用：
+3. 进阶Java能力运用：
    - 由于你的代码能够得到实时动态编译，你可以在保证不出错的情况下充分发挥Java的灵活性。你可以使用Java反射机制(Reflection)访问私有或者受保护字段和方法的访问权限，直接获取和修改状态数据。
    - 可以自由地编写包含异步执行、新线程或者延时任务的代码，例如使用 `CompletableFuture`、开启新 `Thread` 或者调度基于Minecraft Tick的延迟、周期性操作，来实现高级复杂的持续性愿望。
    - 线程安全警告：为了保证服务器健壮性，任何在新线程或异步调度的环境中对 Minecraft 世界、方块或实体的修改都必须在主线程执行。切勿在异步线程直接修改游戏状态，请务必使用 `ctx.getServer().execute(() -> { ... });` 将操作派发回主线程运行。
