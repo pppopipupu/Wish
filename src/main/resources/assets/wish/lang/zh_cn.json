@@ -1,7 +1,7 @@
 {
   "wish.command.thinking": "思考中...",
   "wish.command.success": "生成完毕！正在执行代码...",
-  "wish.command.error": "请求 LLM 期间发生错误: %s",
+  "wish.command.error": "请求 LLM 期间发生错误",
   "wish.command.forbidden": "神明检测到愿望中包含危险操作「%s」，拒绝执行！补偿你一个钻石块。",
   "wish.compiler.compile_failed": "编译失败,执行你愿望的神明代码写错了，补偿你一个钻石块，查看日志获取详细信息",
   "wish.compiler.execute_success": "代码执行完毕!",
