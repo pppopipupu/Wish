@@ -1,0 +1,13 @@
+{
+  "wish.command.thinking": "思考中...",
+  "wish.command.success": "生成完毕！正在执行代码...",
+  "wish.command.error": "请求 LLM 期间发生错误: %s",
+  "wish.compiler.compile_failed": "编译失败,执行你愿望的神明代码写错了，补偿你一个钻石块，查看日志获取详细信息",
+  "wish.compiler.execute_success": "代码执行完毕!",
+  "wish.compiler.runtime_error": "运行时错误,执行你愿望的神明代码写错了，补偿你一个钻石块，查看日志获取详细信息",
+  "itemGroup.wish": "祈愿",
+  "wish.screen.title": "许下祈愿",
+  "wish.screen.input": "输入你的愿望...",
+  "wish.screen.confirm": "确认许愿",
+  "item.wish.wish_scroll": "祈愿术卷轴"
+}

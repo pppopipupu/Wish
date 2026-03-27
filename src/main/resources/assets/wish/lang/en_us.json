@@ -1,0 +1,13 @@
+{
+  "wish.command.thinking": "Thinking...",
+  "wish.command.success": "Generation complete! Executing code...",
+  "wish.command.error": "Error occurred while requesting LLM: %s",
+  "wish.compiler.compile_failed": "Compilation failed,Check out the log for more information",
+  "wish.compiler.execute_success": "Code execution finished!",
+  "wish.compiler.runtime_error": "Runtime error,Check out the log for more information",
+  "itemGroup.wish": "Wish",
+  "wish.screen.title": "Make a Wish",
+  "wish.screen.input": "Write your wish here...",
+  "wish.screen.confirm": "Confirm Wish",
+  "item.wish.wish_scroll": "Wish Scroll"
+}
