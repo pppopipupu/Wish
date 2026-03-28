@@ -4,6 +4,7 @@ import com.pppopipupu.wish.Wish;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Items;
+import net.neoforged.fml.ModList;
 
 import javax.tools.DiagnosticCollector;
 import javax.tools.JavaCompiler;
@@ -13,11 +14,13 @@ import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.StringWriter;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.CodeSource;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -170,9 +173,9 @@ public class WishCompiler {
             }
         }
         try {
-            net.neoforged.fml.ModList.get().forEachModFile(modFile -> {
+            ModList.get().forEachModFile(modFile -> {
                 try {
-                    java.nio.file.Path modPath = modFile.getFilePath();
+                    Path modPath = modFile.getFilePath();
                     File f = modPath.toFile();
                     if (f.exists()) {
                         pathSet.add(f.getAbsolutePath());
@@ -243,7 +246,7 @@ public class WishCompiler {
                 @SuppressWarnings("resource")
                 URLClassLoader loader = new URLClassLoader(new URL[]{tempDir.toURI().toURL()}, WishCompiler.class.getClassLoader());
                 Class<?> clazz = loader.loadClass("com.pppopipupu.wish.eval." + className);
-                java.lang.reflect.Method method = clazz.getMethod("execute", CommandSourceStack.class);
+                Method method = clazz.getMethod("execute", CommandSourceStack.class);
 
                 ctx.getServer().execute(() -> {
                     try {
