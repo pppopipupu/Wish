@@ -115,7 +115,10 @@ public class WishCompiler {
                 && !name.contains("jopt-simple");
     }
 
+    private static final Set<String> scannedDirs = new HashSet<>();
+
     private static void scanJarDirectory(Set<String> paths, File dir) {
+        if (!scannedDirs.add(dir.getAbsolutePath())) return;
         File[] files = dir.listFiles();
         if (files == null) return;
         for (File f : files) {
@@ -126,7 +129,7 @@ public class WishCompiler {
     }
 
     private static void scanLibraries(Set<String> paths, File dir) {
-        if (!dir.isDirectory()) return;
+        if (!dir.isDirectory() || !scannedDirs.add(dir.getAbsolutePath())) return;
         File[] children = dir.listFiles();
         if (children == null) return;
         for (File child : children) {
@@ -138,15 +141,11 @@ public class WishCompiler {
         }
     }
 
-    private static final Set<String> scannedRoots = new LinkedHashSet<>();
-
     private static void discoverLibraryRoot(Set<String> paths, File jarFile) {
         File dir = jarFile.getParentFile();
         while (dir != null) {
             if (dir.getName().equals("libraries") || dir.getName().equals("versions")) {
-                if (scannedRoots.add(dir.getAbsolutePath())) {
-                    scanLibraries(paths, dir);
-                }
+                scanLibraries(paths, dir);
                 return;
             }
             dir = dir.getParentFile();
