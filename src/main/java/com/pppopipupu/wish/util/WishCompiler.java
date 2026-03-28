@@ -5,22 +5,27 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Items;
 
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.StringWriter;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.CodeSource;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 public class WishCompiler {
 
-    private static String resolvedClasspath = null;
+    private static JavaCompiler compiler;
+    private static StandardJavaFileManager fileManager;
+    private static boolean fileManagerReady = false;
 
     private static final Class<?>[] PROBE_CLASSES = {
             net.minecraft.world.level.block.Blocks.class,
@@ -132,22 +137,23 @@ public class WishCompiler {
         }
     }
 
-    private static String buildClasspath() {
-        if (resolvedClasspath != null) {
-            return resolvedClasspath;
-        }
-        Set<String> paths = new LinkedHashSet<>();
+    private static void initFileManager() {
+        if (fileManagerReady) return;
+        compiler = ToolProvider.getSystemJavaCompiler();
+        fileManager = compiler.getStandardFileManager(null, null, StandardCharsets.UTF_8);
+
+        Set<String> pathSet = new LinkedHashSet<>();
         String sysCp = System.getProperty("java.class.path");
         if (sysCp != null && !sysCp.isEmpty()) {
-            paths.addAll(Arrays.asList(sysCp.split(File.pathSeparator)));
+            pathSet.addAll(Arrays.asList(sysCp.split(File.pathSeparator)));
         }
         for (Class<?> probe : PROBE_CLASSES) {
-            addCodeSource(paths, probe);
+            addCodeSource(pathSet, probe);
         }
-        for (String path : new LinkedHashSet<>(paths)) {
+        for (String path : new LinkedHashSet<>(pathSet)) {
             File f = new File(path);
             if (f.isFile()) {
-                discoverLibraryRoot(paths, f);
+                discoverLibraryRoot(pathSet, f);
             }
         }
         try {
@@ -156,20 +162,32 @@ public class WishCompiler {
                     java.nio.file.Path modPath = modFile.getFilePath();
                     File f = modPath.toFile();
                     if (f.exists()) {
-                        paths.add(f.getAbsolutePath());
+                        pathSet.add(f.getAbsolutePath());
                         if (f.isFile() && f.getParentFile() != null) {
-                            scanJarDirectory(paths, f.getParentFile());
+                            scanJarDirectory(pathSet, f.getParentFile());
                         }
                     }
                 } catch (Exception ignored) {}
             });
         } catch (Exception ignored) {}
-        resolvedClasspath = String.join(File.pathSeparator, paths);
-        return resolvedClasspath;
+
+        List<File> cpFiles = new ArrayList<>();
+        for (String p : pathSet) {
+            File f = new File(p);
+            if (f.exists()) cpFiles.add(f);
+        }
+        try {
+            fileManager.setLocation(StandardLocation.CLASS_PATH, cpFiles);
+        } catch (Exception e) {
+            Wish.LOGGER.error("WishCompiler setLocation failed", e);
+        }
+        fileManagerReady = true;
     }
 
     public static void eval(CommandSourceStack ctx, String code) {
         try {
+            initFileManager();
+
             File tempDir = Files.createTempDirectory("wish_eval").toFile();
             tempDir.deleteOnExit();
 
@@ -179,7 +197,6 @@ public class WishCompiler {
                     "import net.minecraft.world.level.block.Blocks;\n" +
                     "import net.minecraft.commands.CommandSourceStack;\n" +
                     "import net.minecraft.network.chat.Component;\n" +
-                    "import net.minecraft.client.Minecraft;\n\n" +
                     "public class " + className + " {\n" +
                     "    public static void execute(CommandSourceStack ctx) throws Exception {\n" +
                     "        " + code + (code.endsWith(";") || code.endsWith("}") ? "" : ";") + "\n" +
@@ -189,17 +206,21 @@ public class WishCompiler {
             File sourceFile = new File(tempDir, className + ".java");
             Files.writeString(sourceFile.toPath(), source, StandardCharsets.UTF_8);
 
-            ByteArrayOutputStream errObj = new ByteArrayOutputStream();
-            int result = ToolProvider.getSystemJavaCompiler().run(null, null, errObj,
-                    "-encoding", "UTF-8",
-                    "-d", tempDir.getAbsolutePath(),
-                    "-cp", buildClasspath(),
-                    sourceFile.getAbsolutePath());
+            fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(tempDir));
 
-            if (result != 0) {
+            Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjects(sourceFile);
+            DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+            List<String> options = List.of("-encoding", "UTF-8");
+
+            JavaCompiler.CompilationTask task = compiler.getTask(new StringWriter(), fileManager, diagnostics, options, null, units);
+            boolean success = task.call();
+
+            if (!success) {
                 ctx.getPlayer().addItem(Items.DIAMOND_BLOCK.getDefaultInstance());
                 ctx.sendFailure(Component.translatable("wish.compiler.compile_failed"));
-                Wish.LOGGER.error(errObj.toString());
+                StringBuilder sb = new StringBuilder();
+                diagnostics.getDiagnostics().forEach(d -> sb.append(d.toString()).append("\n"));
+                Wish.LOGGER.error(sb.toString());
                 return;
             }
 
