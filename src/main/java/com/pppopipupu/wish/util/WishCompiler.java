@@ -14,6 +14,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.CodeSource;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -103,6 +104,34 @@ public class WishCompiler {
         }
     }
 
+    private static void scanLibraries(Set<String> paths, File dir) {
+        if (!dir.isDirectory()) return;
+        File[] children = dir.listFiles();
+        if (children == null) return;
+        for (File child : children) {
+            if (child.isDirectory()) {
+                scanLibraries(paths, child);
+            } else if (child.isFile() && child.getName().endsWith(".jar")) {
+                paths.add(child.getAbsolutePath());
+            }
+        }
+    }
+
+    private static final Set<String> scannedRoots = new LinkedHashSet<>();
+
+    private static void discoverLibraryRoot(Set<String> paths, File jarFile) {
+        File dir = jarFile.getParentFile();
+        while (dir != null) {
+            if (dir.getName().equals("libraries") || dir.getName().equals("versions")) {
+                if (scannedRoots.add(dir.getAbsolutePath())) {
+                    scanLibraries(paths, dir);
+                }
+                return;
+            }
+            dir = dir.getParentFile();
+        }
+    }
+
     private static String buildClasspath() {
         if (resolvedClasspath != null) {
             return resolvedClasspath;
@@ -110,13 +139,31 @@ public class WishCompiler {
         Set<String> paths = new LinkedHashSet<>();
         String sysCp = System.getProperty("java.class.path");
         if (sysCp != null && !sysCp.isEmpty()) {
-            for (String p : sysCp.split(File.pathSeparator)) {
-                paths.add(p);
-            }
+            paths.addAll(Arrays.asList(sysCp.split(File.pathSeparator)));
         }
         for (Class<?> probe : PROBE_CLASSES) {
             addCodeSource(paths, probe);
         }
+        for (String path : new LinkedHashSet<>(paths)) {
+            File f = new File(path);
+            if (f.isFile()) {
+                discoverLibraryRoot(paths, f);
+            }
+        }
+        try {
+            net.neoforged.fml.ModList.get().forEachModFile(modFile -> {
+                try {
+                    java.nio.file.Path modPath = modFile.getFilePath();
+                    File f = modPath.toFile();
+                    if (f.exists()) {
+                        paths.add(f.getAbsolutePath());
+                        if (f.isFile() && f.getParentFile() != null) {
+                            scanJarDirectory(paths, f.getParentFile());
+                        }
+                    }
+                } catch (Exception ignored) {}
+            });
+        } catch (Exception ignored) {}
         resolvedClasspath = String.join(File.pathSeparator, paths);
         return resolvedClasspath;
     }
