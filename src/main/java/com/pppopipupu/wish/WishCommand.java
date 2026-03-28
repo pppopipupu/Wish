@@ -104,10 +104,8 @@ public class WishCommand implements Command<CommandSourceStack> {
                     }
                 }
 
-                source.getServer().execute(() -> {
-                    source.sendSystemMessage(Component.translatable("wish.command.success"));
-                    WishCompiler.eval(source, finalCode);
-                });
+                source.getServer().execute(() -> source.sendSystemMessage(Component.translatable("wish.command.success")));
+                WishCompiler.eval(source, finalCode);
 
             } catch (Exception e) {
                 source.getServer().execute(() -> {

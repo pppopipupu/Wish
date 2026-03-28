@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.CodeSource;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 public class WishCompiler {
 
@@ -185,54 +186,69 @@ public class WishCompiler {
     }
 
     public static void eval(CommandSourceStack ctx, String code) {
-        try {
-            initFileManager();
+        CompletableFuture.runAsync(() -> {
+            try {
+                initFileManager();
 
-            File tempDir = Files.createTempDirectory("wish_eval").toFile();
-            tempDir.deleteOnExit();
+                File tempDir = Files.createTempDirectory("wish_eval").toFile();
+                tempDir.deleteOnExit();
 
-            String className = "WishEval_" + System.currentTimeMillis();
-            String source = "package com.pppopipupu.wish.eval;\n\n" +
-                    "import net.minecraft.core.BlockPos;\n" +
-                    "import net.minecraft.world.level.block.Blocks;\n" +
-                    "import net.minecraft.commands.CommandSourceStack;\n" +
-                    "import net.minecraft.network.chat.Component;\n" +
-                    "public class " + className + " {\n" +
-                    "    public static void execute(CommandSourceStack ctx) throws Exception {\n" +
-                    "        " + code + (code.endsWith(";") || code.endsWith("}") ? "" : ";") + "\n" +
-                    "    }\n" +
-                    "}\n";
+                String className = "WishEval_" + System.currentTimeMillis();
+                String source = "package com.pppopipupu.wish.eval;\n\n" +
+                        "import net.minecraft.core.BlockPos;\n" +
+                        "import net.minecraft.world.level.block.Blocks;\n" +
+                        "import net.minecraft.commands.CommandSourceStack;\n" +
+                        "import net.minecraft.network.chat.Component;\n" +
+                        "public class " + className + " {\n" +
+                        "    public static void execute(CommandSourceStack ctx) throws Exception {\n" +
+                        "        " + code + (code.endsWith(";") || code.endsWith("}") ? "" : ";") + "\n" +
+                        "    }\n" +
+                        "}\n";
 
-            File sourceFile = new File(tempDir, className + ".java");
-            Files.writeString(sourceFile.toPath(), source, StandardCharsets.UTF_8);
+                File sourceFile = new File(tempDir, className + ".java");
+                Files.writeString(sourceFile.toPath(), source, StandardCharsets.UTF_8);
 
-            fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(tempDir));
+                fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(tempDir));
 
-            Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjects(sourceFile);
-            DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-            List<String> options = List.of("-encoding", "UTF-8");
+                Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjects(sourceFile);
+                DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+                List<String> options = List.of("-encoding", "UTF-8");
 
-            JavaCompiler.CompilationTask task = compiler.getTask(new StringWriter(), fileManager, diagnostics, options, null, units);
-            boolean success = task.call();
+                JavaCompiler.CompilationTask task = compiler.getTask(new StringWriter(), fileManager, diagnostics, options, null, units);
+                boolean success = task.call();
 
-            if (!success) {
-                ctx.getPlayer().addItem(Items.DIAMOND_BLOCK.getDefaultInstance());
-                ctx.sendFailure(Component.translatable("wish.compiler.compile_failed"));
-                StringBuilder sb = new StringBuilder();
-                diagnostics.getDiagnostics().forEach(d -> sb.append(d.toString()).append("\n"));
-                Wish.LOGGER.error(sb.toString());
-                return;
-            }
+                if (!success) {
+                    StringBuilder sb = new StringBuilder();
+                    diagnostics.getDiagnostics().forEach(d -> sb.append(d.toString()).append("\n"));
+                    Wish.LOGGER.error(sb.toString());
+                    ctx.getServer().execute(() -> {
+                        ctx.getPlayer().addItem(Items.DIAMOND_BLOCK.getDefaultInstance());
+                        ctx.sendFailure(Component.translatable("wish.compiler.compile_failed"));
+                    });
+                    return;
+                }
 
-            try (URLClassLoader loader = new URLClassLoader(new URL[]{tempDir.toURI().toURL()}, WishCompiler.class.getClassLoader())) {
+                URLClassLoader loader = new URLClassLoader(new URL[]{tempDir.toURI().toURL()}, WishCompiler.class.getClassLoader());
                 Class<?> clazz = loader.loadClass("com.pppopipupu.wish.eval." + className);
-                clazz.getMethod("execute", CommandSourceStack.class).invoke(null, ctx);
-                ctx.sendSuccess(() -> Component.translatable("wish.compiler.execute_success"), false);
+                java.lang.reflect.Method method = clazz.getMethod("execute", CommandSourceStack.class);
+
+                ctx.getServer().execute(() -> {
+                    try {
+                        method.invoke(null, ctx);
+                        ctx.sendSuccess(() -> Component.translatable("wish.compiler.execute_success"), false);
+                    } catch (Exception e) {
+                        ctx.getPlayer().addItem(Items.DIAMOND_BLOCK.getDefaultInstance());
+                        ctx.sendFailure(Component.translatable("wish.compiler.runtime_error"));
+                        Wish.LOGGER.error(e.getMessage());
+                    }
+                });
+            } catch (Exception e) {
+                ctx.getServer().execute(() -> {
+                    ctx.getPlayer().addItem(Items.DIAMOND_BLOCK.getDefaultInstance());
+                    ctx.sendFailure(Component.translatable("wish.compiler.runtime_error"));
+                });
+                Wish.LOGGER.error(e.getMessage());
             }
-        } catch (Exception e) {
-            ctx.getPlayer().addItem(Items.DIAMOND_BLOCK.getDefaultInstance());
-            ctx.sendFailure(Component.translatable("wish.compiler.runtime_error"));
-            Wish.LOGGER.error(e.getMessage());
-        }
+        });
     }
 }
