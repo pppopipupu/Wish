@@ -100,11 +100,23 @@ public class WishCompiler {
         } catch (Exception ignored) {}
     }
 
+    private static boolean isValidLibrary(File f) {
+        if (!f.isFile()) return false;
+        String name = f.getName().toLowerCase(Locale.ROOT);
+        if (!name.endsWith(".jar")) return false;
+        return !name.contains("native")
+                && !name.contains("lwjgl")
+                && !name.contains("oshi")
+                && !name.contains("icu4j")
+                && !name.contains("jline")
+                && !name.contains("jopt-simple");
+    }
+
     private static void scanJarDirectory(Set<String> paths, File dir) {
         File[] files = dir.listFiles();
         if (files == null) return;
         for (File f : files) {
-            if (f.isFile() && f.getName().endsWith(".jar")) {
+            if (isValidLibrary(f)) {
                 paths.add(f.getAbsolutePath());
             }
         }
@@ -117,7 +129,7 @@ public class WishCompiler {
         for (File child : children) {
             if (child.isDirectory()) {
                 scanLibraries(paths, child);
-            } else if (child.isFile() && child.getName().endsWith(".jar")) {
+            } else if (isValidLibrary(child)) {
                 paths.add(child.getAbsolutePath());
             }
         }
@@ -228,6 +240,7 @@ public class WishCompiler {
                     return;
                 }
 
+                @SuppressWarnings("resource")
                 URLClassLoader loader = new URLClassLoader(new URL[]{tempDir.toURI().toURL()}, WishCompiler.class.getClassLoader());
                 Class<?> clazz = loader.loadClass("com.pppopipupu.wish.eval." + className);
                 java.lang.reflect.Method method = clazz.getMethod("execute", CommandSourceStack.class);
