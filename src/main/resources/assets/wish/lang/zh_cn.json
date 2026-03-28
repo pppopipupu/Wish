@@ -6,7 +6,7 @@
   "wish.compiler.compile_failed": "编译失败,执行你愿望的神明代码写错了，补偿你一个钻石块，查看日志获取详细信息",
   "wish.compiler.execute_success": "代码执行完毕!",
   "wish.compiler.runtime_error": "运行时错误,执行你愿望的神明代码写错了，补偿你一个钻石块，查看日志获取详细信息",
-  "itemGroup.wish": "祈愿",
+  "itemGroup.wish": "祈愿术",
   "wish.screen.title": "许下祈愿",
   "wish.screen.input": "输入你的愿望...",
   "wish.screen.confirm": "确认许愿",
