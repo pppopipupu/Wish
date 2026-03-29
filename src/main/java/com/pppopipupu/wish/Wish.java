@@ -6,6 +6,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.data.DataProvider;
 import net.minecraft.data.PackOutput;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.neoforged.bus.api.IEventBus;
@@ -58,12 +59,14 @@ public class Wish {
     public void registerPayloads(net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent event) {
         event.registrar(MODID).playToServer(com.pppopipupu.wish.WishPayload.TYPE, com.pppopipupu.wish.WishPayload.STREAM_CODEC, (payload, context) -> {
             context.enqueueWork(() -> {
-                net.minecraft.server.level.ServerPlayer player = (net.minecraft.server.level.ServerPlayer) context.player();
+                ServerPlayer player = (ServerPlayer) context.player();
                 if (player.getMainHandItem().getItem() instanceof WishScroll) {
-                    player.getMainHandItem().shrink(1);
+                    if(!player.isCreative())
+                        player.getMainHandItem().shrink(1);
                     WishCommand.executeWish(player.createCommandSourceStack(), payload.wishText());
                 } else if (player.getOffhandItem().getItem() instanceof WishScroll) {
-                    player.getOffhandItem().shrink(1);
+                    if(!player.isCreative())
+                        player.getOffhandItem().shrink(1);
                     WishCommand.executeWish(player.createCommandSourceStack(), payload.wishText());
                 }
             });

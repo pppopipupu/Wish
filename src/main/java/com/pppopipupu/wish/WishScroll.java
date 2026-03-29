@@ -38,7 +38,10 @@ public class WishScroll extends Item {
         if (level.isClientSide) {
             WishClientEvents.spawnLightning(new Vec3(player.getX(), player.getY(), player.getZ()));
         }
-        return InteractionResultHolder.consume(player.getItemInHand(hand));
+        if(player.isCreative())
+            return InteractionResultHolder.success(player.getItemInHand(hand));
+        else
+            return InteractionResultHolder.consume(player.getItemInHand(hand));
     }
 
     @Override
