@@ -1,8 +1,6 @@
 package com.pppopipupu.wish;
 
 import com.pppopipupu.wish.client.WishClientEvents;
-import com.pppopipupu.wish.client.WishScreen;
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,7 +15,7 @@ public class WishScroll extends Item {
     public WishScroll(Item.Properties properties) {
         super(properties);
     }
-    
+
     public WishScroll() {
         super(new Item.Properties());
     }
@@ -29,7 +27,7 @@ public class WishScroll extends Item {
 
     @Override
     public UseAnim getUseAnimation(ItemStack stack) {
-        return UseAnim.BOW;
+        return UseAnim.BRUSH;
     }
 
     @Override
@@ -38,7 +36,7 @@ public class WishScroll extends Item {
         if (level.isClientSide) {
             WishClientEvents.spawnLightning(new Vec3(player.getX(), player.getY(), player.getZ()));
         }
-        if(player.isCreative())
+        if (player.isCreative())
             return InteractionResultHolder.success(player.getItemInHand(hand));
         else
             return InteractionResultHolder.consume(player.getItemInHand(hand));
@@ -51,7 +49,7 @@ public class WishScroll extends Item {
             if (ticksUsing >= 60) {
                 player.stopUsingItem();
                 if (level.isClientSide) {
-                    openWishScreen();
+                   WishClientEvents.openWishScreen();
                 }
             }
         }
@@ -62,7 +60,4 @@ public class WishScroll extends Item {
         return true;
     }
 
-    private void openWishScreen() {
-        Minecraft.getInstance().setScreen(new WishScreen());
-    }
 }

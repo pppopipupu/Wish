@@ -2,6 +2,7 @@ package com.pppopipupu.wish.client;
 
 import com.pppopipupu.wish.Wish;
 import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -20,6 +21,9 @@ public class WishClientEvents {
 
     public static void spawnLightning(Vec3 position) {
         activeEffects.add(new WishLightningEffect(position, 60));
+    }
+    public static void openWishScreen() {
+        Minecraft.getInstance().setScreen(new WishScreen());
     }
 
     @SubscribeEvent
