@@ -112,7 +112,15 @@ public class WishCompiler {
                 && !name.contains("oshi")
                 && !name.contains("icu4j")
                 && !name.contains("jline")
-                && !name.contains("jopt-simple");
+                && !name.contains("jopt-simple")
+                && !name.contains("client")
+                && !name.contains("realms")
+                && !name.contains("openal")
+                && !name.contains("sound")
+                && !name.contains("text2speech")
+                && !name.contains("glfw")
+                && !name.contains("stb")
+                && !name.contains("tinyfd");
     }
 
     private static final Set<String> scannedDirs = new HashSet<>();
@@ -130,6 +138,14 @@ public class WishCompiler {
 
     private static void scanLibraries(Set<String> paths, File dir) {
         if (!dir.isDirectory() || !scannedDirs.add(dir.getAbsolutePath())) return;
+        String dirName = dir.getName().toLowerCase(Locale.ROOT);
+        if (dirName.contains("lwjgl") || dirName.contains("native") || 
+            dirName.contains("client") || dirName.contains("realms") || 
+            dirName.contains("openal") || dirName.contains("sound") || 
+            dirName.contains("text2speech") || dirName.contains("glfw") || 
+            dirName.contains("stb") || dirName.contains("tinyfd")) {
+            return;
+        }
         File[] children = dir.listFiles();
         if (children == null) return;
         for (File child : children) {
@@ -144,7 +160,7 @@ public class WishCompiler {
     private static void discoverLibraryRoot(Set<String> paths, File jarFile) {
         File dir = jarFile.getParentFile();
         while (dir != null) {
-            if (dir.getName().equals("libraries") || dir.getName().equals("versions")) {
+            if (dir.getName().equals("libraries")) {
                 scanLibraries(paths, dir);
                 return;
             }
