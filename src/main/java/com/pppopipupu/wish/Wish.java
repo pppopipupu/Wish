@@ -34,7 +34,7 @@ public class Wish {
 
     public static final DeferredItem<WishScroll> WISH_SCROLL = ITEMS.registerItem("wish_scroll", WishScroll::new);
 
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("example_tab", () -> CreativeModeTab.builder()
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> WISH_TAB = CREATIVE_MODE_TABS.register("wish_tab", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup.wish"))
             .withTabsBefore(CreativeModeTabs.COMBAT)
             .icon(() -> WISH_SCROLL.get().getDefaultInstance())
